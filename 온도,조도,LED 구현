@@ -1,0 +1,71 @@
+아두이노 코드
+
+void setup() {
+  pinMode(13, OUTPUT);
+  Serial.begin(9600);
+}
+
+double th(int v) {
+  double t;
+  t = log(((10240000/v) - 10000));
+  t = 1 /(0.001129148 + (0.000234125*t) + (0.0000000876741*t*t*t));
+  t = t - 273.15;
+  return t;
+}
+
+void loop() {
+   String m = Serial.readStringUntil('\n');
+  if(m == "on") digitalWrite(13, HIGH);
+  if(m == "off") digitalWrite(13, LOW);
+  int temperatureSensorValue = analogRead(A0);
+  int lightSensorValue = analogRead(A1);
+  
+  double temperature = th(temperatureSensorValue);
+  
+  Serial.print("Temperature: ");
+  Serial.print(temperature);
+  Serial.print(", Light: ");
+  Serial.println(lightSensorValue);
+  
+  delay(1000);
+}
+
+
+프로세싱 코
+
+import processing.serial.*;
+import processing.net.*;
+Serial p;
+Server s;
+Client c;
+void setup(){
+  p = new Serial(this, "COM8", 9600);
+  s = new Server(this, 12345);
+}
+String m="";
+void draw(){
+  if(p.available()>0){
+    m = p.readStringUntil('\n');
+    if(m!=null){
+      print(m);
+    }
+  }
+  c = s.available();
+  if(c!=null){
+    String w = c.readString();
+    println(w);
+    if (w.indexOf("GET")==0) {
+      c.write("HTTP/1.1 200 OK\r\n\r\n\r\n");
+      c.write(m);
+    }
+    c.stop();
+    
+     if (w.indexOf("PUT /") == 0) {
+        int n = w.indexOf("\r\n\r\n") + 4;
+        w = w.substring(n);
+        w += '\n';
+        p.write(w);
+        print(w);
+     }
+  }
+}
